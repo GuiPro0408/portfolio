@@ -12,7 +12,7 @@ import {
     IconButton,
     Tooltip,
 } from "@mui/material";
-import { useForm } from "react-hook-form";
+import { useForm, useFormContext } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { projectInputSchema, type ProjectInput, blogPostInputSchema, type BlogPostInput } from "@/lib/validation";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -67,23 +67,26 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
     defaultTitle?: string;
     defaultSlug?: string;
 }) {
-    const [title, setTitle] = React.useState(defaultTitle);
+    const form = useFormContext();
+    const title = form.watch("title");
+    const slug = form.watch("slug");
     const initialAuto = !defaultSlug || slugify(defaultTitle) === defaultSlug;
-    const [slug, setSlug] = React.useState(defaultSlug || slugify(defaultTitle));
     const [auto, setAuto] = React.useState(initialAuto);
 
-    React.useEffect(() => { if (auto) setSlug(slugify(title)); }, [title, auto]);
+    React.useEffect(() => {
+        if (auto && title) {
+            form.setValue("slug", slugify(title));
+        }
+    }, [title, auto, form]);
 
     const copySlug = React.useCallback(() => navigator.clipboard.writeText(slug), [slug]);
 
     return (
         <>
-            <TextField name="title" label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required fullWidth />
+            <TextField {...form.register("title")} label="Title" required fullWidth />
             <TextField
-                name="slug"
+                {...form.register("slug")}
                 label="Slug"
-                value={slug}
-                onChange={(e) => { setSlug(e.target.value); setAuto(false); }}
                 required
                 fullWidth
                 helperText={auto ? "Auto-generated from title" : "Custom slug"}

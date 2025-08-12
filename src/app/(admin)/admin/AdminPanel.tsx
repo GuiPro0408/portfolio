@@ -15,7 +15,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { twoColGridSx, fullSpanSx } from "./styles";
 import { useDebouncedValue, formatDateTimeLocal } from "./utils";
 import { SectionCard, FormSubmitButton, TitleSlugFields, SearchBar, DateTimeNowField, useProjectForm, useBlogPostForm } from "./components";
+import type { ProjectInput, BlogPostInput } from "@/lib/validation";
 import { TechStackField, CoverImageField } from "./fields";
+import ImageInput from "./ImageInput";
 import { DeleteWithConfirm } from "./delete";
 import { FormProvider } from "react-hook-form";
 
@@ -78,21 +80,24 @@ export default function AdminPanel({ projects, posts }: Props) {
 
   function ProjectCreateForm() {
     const form = useProjectForm();
+
+    const onSubmit = async (data: ProjectInput) => {
+      const formData = new FormData();
+      formData.set("title", data.title);
+      formData.set("slug", data.slug);
+      formData.set("summary", data.summary ?? "");
+      formData.set("content", data.content);
+      formData.set("techStack", (data.techStack ?? []).join(", "));
+      if (data.repoUrl) formData.set("repoUrl", data.repoUrl);
+      if (data.demoUrl) formData.set("demoUrl", data.demoUrl);
+      if (data.coverImage) formData.set("coverImage", data.coverImage);
+      if (data.featured) formData.set("featured", "true");
+      return createProject(formData);
+    };
+
     return (
       <FormProvider {...form}>
-        <Box component="form" action={async (fd: FormData) => {
-          const values = form.getValues();
-          fd.set("title", values.title);
-          fd.set("slug", values.slug);
-          fd.set("summary", values.summary ?? "");
-          fd.set("content", values.content);
-          fd.set("techStack", (values.techStack ?? []).join(", "));
-          if (values.repoUrl) fd.set("repoUrl", values.repoUrl);
-          if (values.demoUrl) fd.set("demoUrl", values.demoUrl);
-          if (values.coverImage) fd.set("coverImage", values.coverImage);
-          if (values.featured) fd.set("featured", "true");
-          return createProject(fd);
-        }} sx={twoColGridSx}>
+        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
           <TitleSlugFields />
           <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
             error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
@@ -104,6 +109,7 @@ export default function AdminPanel({ projects, posts }: Props) {
           <TextField {...form.register("demoUrl")} label="Demo URL" placeholder="https://…" fullWidth
             error={!!form.formState.errors.demoUrl} helperText={form.formState.errors.demoUrl?.message} />
           <CoverImageField name="coverImage" />
+          <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <FormControlLabel control={<Switch checked={form.watch("featured") ?? false} onChange={(e) => form.setValue("featured", e.target.checked)} />} label="Featured" />
           <Box sx={fullSpanSx}>
             <FormSubmitButton label="Create" />
@@ -126,22 +132,25 @@ export default function AdminPanel({ projects, posts }: Props) {
       coverImage: p.coverImage ?? "",
       featured: p.featured,
     });
+
+    const onSubmit = async (data: ProjectInput) => {
+      const formData = new FormData();
+      formData.set("id", String(p.id));
+      formData.set("title", data.title);
+      formData.set("slug", data.slug);
+      formData.set("summary", data.summary ?? "");
+      formData.set("content", data.content);
+      formData.set("techStack", (data.techStack ?? []).join(", "));
+      formData.set("repoUrl", data.repoUrl ?? "");
+      formData.set("demoUrl", data.demoUrl ?? "");
+      formData.set("coverImage", data.coverImage ?? "");
+      if (data.featured) formData.set("featured", "true");
+      return updateProject(formData);
+    };
+
     return (
       <FormProvider {...form}>
-        <Box component="form" action={async (fd: FormData) => {
-          const values = form.getValues();
-          fd.set("id", String(p.id));
-          fd.set("title", values.title);
-          fd.set("slug", values.slug);
-          fd.set("summary", values.summary ?? "");
-          fd.set("content", values.content);
-          fd.set("techStack", (values.techStack ?? []).join(", "));
-          fd.set("repoUrl", values.repoUrl ?? "");
-          fd.set("demoUrl", values.demoUrl ?? "");
-          fd.set("coverImage", values.coverImage ?? "");
-          if (values.featured) fd.set("featured", "true");
-          return updateProject(fd);
-        }} sx={twoColGridSx}>
+        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
           <TitleSlugFields defaultTitle={p.title} defaultSlug={p.slug} />
           <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
             error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
@@ -153,6 +162,7 @@ export default function AdminPanel({ projects, posts }: Props) {
           <TextField {...form.register("demoUrl")} label="Demo URL" fullWidth
             error={!!form.formState.errors.demoUrl} helperText={form.formState.errors.demoUrl?.message} />
           <CoverImageField name="coverImage" defaultValue={p.coverImage ?? ""} />
+          <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <FormControlLabel control={<Switch checked={form.watch("featured") ?? false} onChange={(e) => form.setValue("featured", e.target.checked)} />} label="Featured" />
           <Box sx={fullSpanSx}>
             <FormSubmitButton label="Save" />
@@ -164,25 +174,28 @@ export default function AdminPanel({ projects, posts }: Props) {
 
   function PostCreateForm() {
     const form = useBlogPostForm();
+
+    const onSubmit = async (data: BlogPostInput) => {
+      const formData = new FormData();
+      formData.set("title", data.title);
+      formData.set("slug", data.slug);
+      formData.set("excerpt", data.excerpt);
+      formData.set("content", data.content);
+      if (data.coverImage) formData.set("coverImage", data.coverImage);
+      formData.set("publishedAt", data.publishedAt.toISOString());
+      return createBlogPost(formData);
+    };
+
     return (
       <FormProvider {...form}>
-        <Box component="form" action={async (fd: FormData) => {
-          const values = form.getValues();
-          fd.set("title", values.title);
-          fd.set("slug", values.slug);
-          fd.set("excerpt", values.excerpt);
-          fd.set("content", values.content);
-          if (values.coverImage) fd.set("coverImage", values.coverImage);
-          const raw = (fd.get("publishedAt") as string) || new Date().toISOString();
-          fd.set("publishedAt", raw);
-          return createBlogPost(fd);
-        }} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
           <TitleSlugFields />
           <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
             required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
             required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <CoverImageField name="coverImage" />
+          <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <DateTimeNowField name="publishedAt" label="Published At" defaultNow />
           <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
             <FormSubmitButton label="Create" />
@@ -202,26 +215,29 @@ export default function AdminPanel({ projects, posts }: Props) {
       coverImage: post.coverImage ?? "",
       publishedAt: post.publishedAt ?? new Date(),
     });
+
+    const onSubmit = async (data: BlogPostInput) => {
+      const formData = new FormData();
+      formData.set("id", String(post.id));
+      formData.set("title", data.title);
+      formData.set("slug", data.slug);
+      formData.set("excerpt", data.excerpt);
+      formData.set("content", data.content);
+      formData.set("coverImage", data.coverImage ?? "");
+      formData.set("publishedAt", data.publishedAt.toISOString());
+      return updateBlogPost(formData);
+    };
+
     return (
       <FormProvider {...form}>
-        <Box component="form" action={async (fd: FormData) => {
-          const values = form.getValues();
-          fd.set("id", String(post.id));
-          fd.set("title", values.title);
-          fd.set("slug", values.slug);
-          fd.set("excerpt", values.excerpt);
-          fd.set("content", values.content);
-          fd.set("coverImage", values.coverImage ?? "");
-          const raw = (fd.get("publishedAt") as string) || new Date().toISOString();
-          fd.set("publishedAt", raw);
-          return updateBlogPost(fd);
-        }} sx={twoColGridSx}>
+        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
           <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
           <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={fullSpanSx}
             required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
             required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <CoverImageField name="coverImage" defaultValue={post.coverImage ?? ""} />
+          <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <DateTimeNowField
             name="publishedAt"
             label="Published At"
