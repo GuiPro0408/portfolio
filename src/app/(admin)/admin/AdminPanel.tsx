@@ -64,6 +64,16 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Debounce any value; avoids filtering on every keystroke
+function useDebouncedValue<T>(value: T, delay = 250) {
+  const [debounced, setDebounced] = React.useState(value);
+  React.useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
+
 function useDisclosure(initial = false) {
   const [open, setOpen] = React.useState(initial);
   const on = React.useCallback(() => setOpen(true), []);
@@ -71,6 +81,17 @@ function useDisclosure(initial = false) {
   const toggle = React.useCallback(() => setOpen((v) => !v), []);
   return { open, on, off, toggle } as const;
 }
+
+// -----------------------------
+// Styles (hoisted to stabilize prop identity)
+// -----------------------------
+const twoColGridSx = {
+  display: "grid",
+  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+  gap: 2,
+} as const;
+
+const fullSpanSx = { gridColumn: { md: "1 / span 2" } } as const;
 
 // -----------------------------
 // Reusable UI primitives
@@ -147,7 +168,7 @@ function DeleteWithConfirm({ id, action, label = "Delete", color = "error" as co
   );
 }
 
-function TitleSlugFields({ defaultTitle = "", defaultSlug = "" }: {
+const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ defaultTitle = "", defaultSlug = "" }: {
   defaultTitle?: string;
   defaultSlug?: string;
 }) {
@@ -156,20 +177,13 @@ function TitleSlugFields({ defaultTitle = "", defaultSlug = "" }: {
   const [slug, setSlug] = React.useState(defaultSlug || slugify(defaultTitle));
   const [auto, setAuto] = React.useState(initialAuto);
 
-  React.useEffect(() => {
-    if (auto) setSlug(slugify(title));
-  }, [title, auto]);
+  React.useEffect(() => { if (auto) setSlug(slugify(title)); }, [title, auto]);
+
+  const copySlug = React.useCallback(() => navigator.clipboard.writeText(slug), [slug]);
 
   return (
     <>
-      <TextField
-        name="title"
-        label="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-        fullWidth
-      />
+      <TextField name="title" label="Title" value={title} onChange={(e) => setTitle(e.target.value)} required fullWidth />
       <TextField
         name="slug"
         label="Slug"
@@ -182,7 +196,7 @@ function TitleSlugFields({ defaultTitle = "", defaultSlug = "" }: {
           endAdornment: (
             <InputAdornment position="end">
               <Tooltip title="Copy slug">
-                <IconButton aria-label="Copy slug" onClick={() => navigator.clipboard.writeText(slug)}>
+                <IconButton aria-label="Copy slug" onClick={copySlug}>
                   <ContentCopyIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
@@ -192,29 +206,23 @@ function TitleSlugFields({ defaultTitle = "", defaultSlug = "" }: {
       />
     </>
   );
-}
+});
 
-function TechStackField({ name, defaultValue }: { name: string; defaultValue?: string[] | string | null }) {
+const TechStackField = React.memo(function TechStackFieldImpl({ name, defaultValue }: { name: string; defaultValue?: string[] | string | null }) {
   const initial = Array.isArray(defaultValue)
     ? defaultValue
     : typeof defaultValue === "string" && defaultValue.trim() !== ""
       ? defaultValue.split(",").map((s) => s.trim()).filter(Boolean)
       : [];
   const [tags, setTags] = React.useState<string[]>(initial);
-
-  const onChange = (
+  const onChange = React.useCallback((
     _event: React.SyntheticEvent,
     newValue: string[]
-  ) => setTags(newValue);
+  ) => setTags(newValue), []);
 
   return (
     <>
-      <Autocomplete
-        multiple
-        freeSolo
-        options={[]}
-        value={tags}
-        onChange={onChange}
+      <Autocomplete multiple freeSolo options={[]} value={tags} onChange={onChange}
         renderInput={(params) => (
           <TextField {...params} label="Tech Stack" placeholder="Add tech and press Enter" />
         )}
@@ -223,11 +231,14 @@ function TechStackField({ name, defaultValue }: { name: string; defaultValue?: s
       <input type="hidden" name={name} value={tags.join(", ")} />
     </>
   );
-}
+});
 
-function CoverImageField({ name, defaultValue = "" }: { name: string; defaultValue?: string | null }) {
+const CoverImageField = React.memo(function CoverImageFieldImpl({ name, defaultValue = "" }: { name: string; defaultValue?: string | null }) {
   const [val, setVal] = React.useState(defaultValue ?? "");
-  const isImg = /^https?:\/\//.test(val) && /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(val);
+  const isImg = React.useMemo(
+    () => /^https?:\/\//.test(val) && /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(val),
+    [val]
+  );
   return (
     <Stack gap={1}>
       <TextField
@@ -246,7 +257,7 @@ function CoverImageField({ name, defaultValue = "" }: { name: string; defaultVal
       ) : null}
     </Stack>
   );
-}
+});
 
 function SearchBar({ value, onChange, placeholder, extra }: {
   value: string;
@@ -294,25 +305,38 @@ export default function AdminPanel({ projects, posts }: Props) {
   const [qPosts, setQPosts] = React.useState("");
   const [onlyPublished, setOnlyPublished] = React.useState(false);
 
+  // debounce keystrokes
+  const dqProjects = useDebouncedValue(qProjects, 250);
+  const dqPosts = useDebouncedValue(qPosts, 250);
+
+  // build search index once per data change
+  const projectsIdx = React.useMemo<(Project & { _hay: string })[]>(
+    () =>
+      projects.map((p) => ({
+        ...p,
+        _hay: `${p.title} ${p.slug} ${p.summary ?? ""} ${(p.techStack ?? []).join(" ")}`.toLowerCase(),
+      })),
+    [projects]
+  );
+
+  const postsIdx = React.useMemo<(BlogPost & { _hay: string })[]>(
+    () =>
+      posts.map((p) => ({
+        ...p,
+        _hay: `${p.title} ${p.slug} ${p.excerpt ?? ""}`.toLowerCase(),
+      })),
+    [posts]
+  );
+
   const filteredProjects = React.useMemo(() => {
-    const q = qProjects.trim().toLowerCase();
-    return projects.filter((p) => {
-      if (onlyFeatured && !p.featured) return false;
-      if (!q) return true;
-      const hay = `${p.title} ${p.slug} ${p.summary ?? ""} ${(p.techStack ?? []).join(" ")}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [projects, qProjects, onlyFeatured]);
+    const q = dqProjects.trim().toLowerCase();
+    return projectsIdx.filter((p) => (!onlyFeatured || p.featured) && (!q || p._hay.includes(q)));
+  }, [projectsIdx, dqProjects, onlyFeatured]);
 
   const filteredPosts = React.useMemo(() => {
-    const q = qPosts.trim().toLowerCase();
-    return posts.filter((p) => {
-      if (onlyPublished && !p.publishedAt) return false;
-      if (!q) return true;
-      const hay = `${p.title} ${p.slug} ${p.excerpt ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [posts, qPosts, onlyPublished]);
+    const q = dqPosts.trim().toLowerCase();
+    return postsIdx.filter((p) => (!onlyPublished || p.publishedAt) && (!q || p._hay.includes(q)));
+  }, [postsIdx, dqPosts, onlyPublished]);
 
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { md: "260px 1fr" }, gap: 3 }}>
@@ -346,11 +370,11 @@ export default function AdminPanel({ projects, posts }: Props) {
               <Box
                 component="form"
                 action={createProject}
-                sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}
+                sx={twoColGridSx}
               >
                 <TitleSlugFields />
-                <TextField name="summary" label="Summary" multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
-                <TextField name="content" label="Content" multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
+                <TextField name="summary" label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx} />
+                <TextField name="content" label="Content" multiline minRows={6} fullWidth sx={fullSpanSx} />
                 <TechStackField name="techStack" />
 
                 <TextField name="repoUrl" label="Repository URL" placeholder="https://…" fullWidth />
@@ -358,7 +382,7 @@ export default function AdminPanel({ projects, posts }: Props) {
                 <CoverImageField name="coverImage" />
 
                 <FormControlLabel control={<Switch name="featured" />} label="Featured" />
-                <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
+                <Box sx={fullSpanSx}>
                   <FormSubmitButton label="Create" />
                 </Box>
               </Box>
@@ -380,7 +404,7 @@ export default function AdminPanel({ projects, posts }: Props) {
                 <Paper variant="outlined">
                   {filteredProjects.map((p, idx) => (
                     <Box key={p.id}>
-                      <Accordion defaultExpanded={idx === 0} disableGutters>
+                      <Accordion defaultExpanded={idx === 0} disableGutters TransitionProps={{ unmountOnExit: true }}>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                           <Typography sx={{ fontWeight: 600 }}>{p.title}</Typography>
                           <Typography sx={{ ml: 1, color: "text.secondary", fontSize: 12 }}>/ {p.slug}</Typography>
@@ -391,18 +415,18 @@ export default function AdminPanel({ projects, posts }: Props) {
                             <Box
                               component="form"
                               action={updateProject}
-                              sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}
+                              sx={twoColGridSx}
                             >
-                              <input type="hidden" name="id" value={p.id} />
+                              <input type="hidden" name="id" value={String(p.id)} />
                               <TitleSlugFields defaultTitle={p.title} defaultSlug={p.slug} />
-                              <TextField name="summary" label="Summary" defaultValue={p.summary ?? ""} multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
-                              <TextField name="content" label="Content" defaultValue={p.content ?? ""} multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
+                              <TextField name="summary" label="Summary" defaultValue={p.summary ?? ""} multiline minRows={2} fullWidth sx={fullSpanSx} />
+                              <TextField name="content" label="Content" defaultValue={p.content ?? ""} multiline minRows={6} fullWidth sx={fullSpanSx} />
                               <TechStackField name="techStack" defaultValue={p.techStack ?? []} />
                               <TextField name="repoUrl" label="Repository URL" defaultValue={p.repoUrl ?? ""} fullWidth />
                               <TextField name="demoUrl" label="Demo URL" defaultValue={p.demoUrl ?? ""} fullWidth />
                               <CoverImageField name="coverImage" defaultValue={p.coverImage ?? ""} />
                               <FormControlLabel control={<Switch name="featured" defaultChecked={p.featured} />} label="Featured" />
-                              <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
+                              <Box sx={fullSpanSx}>
                                 <FormSubmitButton label="Save" />
                               </Box>
                             </Box>
@@ -459,7 +483,7 @@ export default function AdminPanel({ projects, posts }: Props) {
                 <Paper variant="outlined">
                   {filteredPosts.map((post, idx) => (
                     <Box key={post.id}>
-                      <Accordion defaultExpanded={idx === 0} disableGutters>
+                      <Accordion defaultExpanded={idx === 0} disableGutters TransitionProps={{ unmountOnExit: true }}>
                         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                           <Typography sx={{ fontWeight: 600 }}>{post.title}</Typography>
                           <Typography sx={{ ml: 1, color: "text.secondary", fontSize: 12 }}>/ {post.slug}</Typography>
@@ -474,19 +498,19 @@ export default function AdminPanel({ projects, posts }: Props) {
                             <Box
                               component="form"
                               action={updateBlogPost}
-                              sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}
+                              sx={twoColGridSx}
                             >
-                              <input type="hidden" name="id" value={post.id} />
+                              <input type="hidden" name="id" value={String(post.id)} />
                               <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
-                              <TextField name="excerpt" label="Excerpt" defaultValue={post.excerpt ?? ""} multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
-                              <TextField name="content" label="Content" defaultValue={post.content ?? ""} multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
+                              <TextField name="excerpt" label="Excerpt" defaultValue={post.excerpt ?? ""} multiline minRows={2} fullWidth sx={fullSpanSx} />
+                              <TextField name="content" label="Content" defaultValue={post.content ?? ""} multiline minRows={6} fullWidth sx={fullSpanSx} />
                               <CoverImageField name="coverImage" defaultValue={post.coverImage ?? ""} />
                               <DateTimeNowField
                                 name="publishedAt"
                                 label="Published At"
                                 defaultValue={post.publishedAt ? formatDateTimeLocal(post.publishedAt) : ""}
                               />
-                              <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
+                              <Box sx={fullSpanSx}>
                                 <FormSubmitButton label="Save" />
                               </Box>
                             </Box>
