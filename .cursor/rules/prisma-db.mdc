@@ -1,0 +1,53 @@
+---
+globs: prisma/**,lib/db.ts,scripts/**
+description: Prisma, Postgres, migrations, and seeding
+---
+## Client usage
+
+- Import the singleton from [lib/db.ts](mdc:lib/db.ts). It sets a global in development to avoid multiple instances.
+
+```ts
+import { prisma } from "../../lib/db"; // from a file under src/*
+const projects = await prisma.project.findMany();
+```
+
+## Schema and migrations
+
+- Edit the schema in [prisma/schema.prisma](mdc:prisma/schema.prisma).
+- After changes, locally run:
+
+```bash
+npx prisma generate
+npx prisma migrate dev --name <change>
+```
+
+- In production deployments (e.g., Vercel), use:
+
+```bash
+npm run migrate:deploy
+```
+
+## Seeding
+
+- Seed with [scripts/seed.ts](mdc:scripts/seed.ts):
+
+```bash
+npm run seed
+```
+
+- Do not seed in production.
+
+## Environment and local DB
+
+- Requires `DATABASE_URL`. Example (from docs):
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/portfolio?schema=public"
+```
+
+- Start local Postgres via [docker-compose.yml](mdc:docker-compose.yml):
+
+```bash
+docker compose up -d
+```
+

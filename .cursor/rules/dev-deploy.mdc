@@ -1,0 +1,39 @@
+---
+alwaysApply: false
+description: Local development, database, and deployment commands
+---
+## Local development
+
+```bash
+npm install
+npm run dev
+```
+
+## Database (Docker Compose helpers)
+
+```bash
+npm run db:up    # start Postgres (and pgAdmin)
+npm run db:logs  # follow logs
+npm run db:down  # stop services
+```
+
+## After editing Prisma schema
+
+```bash
+npx prisma migrate dev --name <change>
+npm run seed
+```
+
+## Build and run
+
+```bash
+npm run build
+npm start
+```
+
+## Deploying (Vercel)
+
+- Build command is defined in [vercel.json](mdc:vercel.json): `npm run migrate:deploy && next build`.
+- Ensure env vars are set in Vercel: at least `DATABASE_URL` (and if auth is enabled later: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`).
+- Do not run local seeding in production.
+

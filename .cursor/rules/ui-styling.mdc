@@ -1,0 +1,15 @@
+---
+globs: src/**/*.tsx,src/app/globals.css
+description: Styling with Tailwind and MUI
+---
+## Guidelines
+
+- **Tailwind**: Prefer utilities for layout, spacing, color, and responsive behavior. Keep class order consistent.
+- **MUI**: Use for complex components (dialogs, menus, icons) when it speeds delivery. Emotion is available; if adding a theme, wrap it in [src/app/layout.tsx](mdc:src/app/layout.tsx).
+- **Fonts**: Configured via `next/font` in layout. Keep CSS variables on `<body>` as in [src/app/layout.tsx](mdc:src/app/layout.tsx).
+
+## Tips
+
+- Favor semantic HTML and accessible attributes. Keep overrides minimal.
+- Avoid mixing inline styles with Tailwind unless necessary.
+

@@ -1,0 +1,44 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript + Next.js App Router conventions
+---
+## TypeScript
+
+- **Strictness**: `strict` is enabled. Avoid `any`; prefer precise types.
+- **Exports**: Explicitly type exported functions, component props, and public APIs.
+- **Path alias**: `@/*` maps to `src/*` per [tsconfig.json](mdc:tsconfig.json). Since `lib/db.ts` lives outside `src`, import it via a relative path from your file (example from a file in `src/app`):
+
+```ts
+import { prisma } from "../../lib/db";
+```
+
+If you prefer an alias for `lib/*`, add it to `paths` and keep `moduleResolution: "bundler"`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "lib/*": ["./lib/*"]
+    }
+  }
+}
+```
+
+## Next.js App Router
+
+- **Server by default**: Components are Server Components unless `"use client"` is present. Use client only for hooks, browser-only APIs, or interactive UI.
+- **Metadata**: Export `metadata` using `Metadata` as in [src/app/layout.tsx](mdc:src/app/layout.tsx).
+- **Data access**: Keep server-side data fetching in Server Components or route handlers. Do not instantiate `PrismaClient` directly; import from [lib/db.ts](mdc:lib/db.ts).
+- **Fonts**: Prefer `next/font` patterns shown in [src/app/layout.tsx](mdc:src/app/layout.tsx) to avoid CLS.
+
+## Linting
+
+- **Config**: [eslint.config.mjs](mdc:eslint.config.mjs) extends Next core rules. Run `npm run lint` locally and in CI.
+- **Practices**: Handle errors meaningfully; avoid empty `catch`. Keep functions small with early returns.
+
+## Styling
+
+- Use Tailwind CSS utilities for layout/spacing and MUI for complex widgets.
+- Keep `className` strings readable; group by layout → spacing → color.
+
