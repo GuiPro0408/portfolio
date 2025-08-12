@@ -36,7 +36,7 @@ export const authOptions: NextAuthOptions = {
         try {
           const dbUser = await prisma.user.findUnique({ where: { id: Number(token.sub) } });
           if (dbUser) token.role = dbUser.role;
-        } catch (_) {
+        } catch {
           // ignore
         }
       }
