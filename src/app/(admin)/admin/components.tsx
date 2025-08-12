@@ -75,9 +75,9 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
 
     React.useEffect(() => {
         if (auto && title) {
-            form.setValue("slug", slugify(title));
+            form.setValue("slug", slugify(title), { shouldValidate: false });
         }
-    }, [title, auto, form]);
+    }, [title, auto]);
 
     const copySlug = React.useCallback(() => navigator.clipboard.writeText(slug), [slug]);
 
@@ -90,16 +90,28 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
                 required
                 fullWidth
                 helperText={auto ? "Auto-generated from title" : "Custom slug"}
-                InputProps={{
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <Tooltip title="Copy slug">
-                                <IconButton aria-label="Copy slug" onClick={copySlug}>
-                                    <ContentCopyIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-                        </InputAdornment>
-                    ),
+                InputLabelProps={{
+                    shrink: !!slug || auto
+                }}
+                slotProps={{
+                    input: {
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <Button
+                                    size="small"
+                                    onClick={() => setAuto(!auto)}
+                                    sx={{ mr: 1 }}
+                                >
+                                    {auto ? "Manual" : "Auto"}
+                                </Button>
+                                <Tooltip title="Copy slug">
+                                    <IconButton aria-label="Copy slug" onClick={copySlug}>
+                                        <ContentCopyIcon fontSize="small" />
+                                    </IconButton>
+                                </Tooltip>
+                            </InputAdornment>
+                        ),
+                    },
                 }}
             />
         </>
@@ -157,12 +169,14 @@ export function SearchBar({ value, onChange, placeholder, extra }: {
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
                 fullWidth
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <SearchIcon fontSize="small" />
-                        </InputAdornment>
-                    ),
+                slotProps={{
+                    input: {
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon fontSize="small" />
+                            </InputAdornment>
+                        ),
+                    },
                 }}
             />
             {extra}
@@ -183,6 +197,14 @@ export function DateTimeNowField({ name, label, defaultNow = false, defaultValue
     const inputRef = React.useRef<HTMLInputElement>(null);
     const init = React.useMemo(() => (defaultNow ? formatDateTimeLocal(new Date()) : defaultValue), [defaultNow, defaultValue]);
 
+    const setToNow = React.useCallback(() => {
+        if (inputRef.current) inputRef.current.value = formatDateTimeLocal(new Date());
+    }, []);
+
+    const clearValue = React.useCallback(() => {
+        if (inputRef.current) inputRef.current.value = "";
+    }, []);
+
     return (
         <Stack gap={1}>
             <TextField
@@ -194,11 +216,11 @@ export function DateTimeNowField({ name, label, defaultNow = false, defaultValue
                 fullWidth
             />
             <Box>
-                <Button size="small" onClick={() => { if (inputRef.current) inputRef.current.value = formatDateTimeLocal(new Date()); }}>
+                <Button size="small" onClick={setToNow}>
                     Set to now
                 </Button>
                 {defaultValue ? (
-                    <Button size="small" onClick={() => { if (inputRef.current) inputRef.current.value = ""; }}>
+                    <Button size="small" onClick={clearValue}>
                         Clear
                     </Button>
                 ) : null}
