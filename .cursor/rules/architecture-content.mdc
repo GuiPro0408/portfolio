@@ -1,0 +1,60 @@
+---
+alwaysApply: false
+description: Architecture, content structure, best practices, deployment, and official docs
+---
+## Architecture (planned)
+
+```
+app/
+  (public)/
+    page.tsx
+    projects/
+    blog/
+    contact/
+  (admin)/
+    layout.tsx
+    projects/
+    blog/
+components/
+  ui/         // MUI-based components
+  sections/   // Tailwind + layout components
+lib/
+  db.ts       // Prisma client
+  auth.ts     // Auth.js config
+styles/
+  globals.css // Tailwind layers
+prisma/
+  schema.prisma
+```
+
+## Data models (current)
+
+See [prisma/schema.prisma](mdc:prisma/schema.prisma) for `Project`, `BlogPost`, and `User` models.
+
+## Content Structure
+
+- **Public Pages**: Home, Projects, Blog, Contact
+- **Admin Pages**: Dashboard, Manage Projects, Manage Blog Posts
+
+## Best Practices
+
+- Server Components by default; client components only when needed
+- Per‑route SEO metadata via Metadata API
+- Tailwind for layout; MUI for component polish
+- Validate inputs with Zod
+- Consider ISR + tag‑based revalidation and security headers as the project evolves
+
+## Deployment & Hosting
+
+- Vercel for hosting; DB on Supabase or Vercel Postgres
+- Auto‑deploy from GitHub `main`
+
+## Official Documentation
+
+- Next.js: <https://nextjs.org/docs>
+- Tailwind CSS: <https://tailwindcss.com/>
+- PostgreSQL: <https://www.postgresql.org/docs/>
+- Prisma: <https://www.prisma.io/docs>
+- MUI: <https://mui.com/>
+- NextAuth / Auth.js: <https://next-auth.js.org/> / <https://authjs.dev/>
+
