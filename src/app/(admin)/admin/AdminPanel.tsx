@@ -97,12 +97,12 @@ export default function AdminPanel({ projects, posts }: Props) {
 
     return (
       <FormProvider {...form}>
-        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
+        <Box component="form" noValidate onSubmit={form.handleSubmit(onSubmit, () => { })} sx={twoColGridSx}>
           <TitleSlugFields />
           <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
             error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
-            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+            error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <TechStackField name="techStack" />
           <TextField {...form.register("repoUrl")} label="Repository URL" placeholder="https://…" fullWidth
             error={!!form.formState.errors.repoUrl} helperText={form.formState.errors.repoUrl?.message} />
@@ -150,12 +150,12 @@ export default function AdminPanel({ projects, posts }: Props) {
 
     return (
       <FormProvider {...form}>
-        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
+        <Box component="form" noValidate onSubmit={form.handleSubmit(onSubmit, () => { })} sx={twoColGridSx}>
           <TitleSlugFields defaultTitle={p.title} defaultSlug={p.slug} />
           <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
             error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
-            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+            error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <TechStackField name="techStack" defaultValue={p.techStack ?? []} />
           <TextField {...form.register("repoUrl")} label="Repository URL" fullWidth
             error={!!form.formState.errors.repoUrl} helperText={form.formState.errors.repoUrl?.message} />
@@ -188,12 +188,12 @@ export default function AdminPanel({ projects, posts }: Props) {
 
     return (
       <FormProvider {...form}>
-        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+        <Box component="form" noValidate onSubmit={form.handleSubmit(onSubmit, () => { })} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
           <TitleSlugFields />
           <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
-            required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
+            error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
-            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+            error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <CoverImageField name="coverImage" />
           <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <DateTimeNowField name="publishedAt" label="Published At" defaultNow />
@@ -230,12 +230,12 @@ export default function AdminPanel({ projects, posts }: Props) {
 
     return (
       <FormProvider {...form}>
-        <Box component="form" onSubmit={form.handleSubmit(onSubmit)} sx={twoColGridSx}>
+        <Box component="form" noValidate onSubmit={form.handleSubmit(onSubmit, () => { })} sx={twoColGridSx}>
           <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
           <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={fullSpanSx}
-            required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
+            error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
           <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
-            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+            error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
           <CoverImageField name="coverImage" defaultValue={post.coverImage ?? ""} />
           <ImageInput name="coverFile" value={form.watch("coverImage") ?? ""} onChangeUrl={(u) => form.setValue("coverImage", u)} />
           <DateTimeNowField

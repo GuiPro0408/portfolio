@@ -13,12 +13,12 @@ import {
     Tooltip,
 } from "@mui/material";
 import { useForm, useFormContext } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { projectInputSchema, type ProjectInput, blogPostInputSchema, type BlogPostInput } from "@/lib/validation";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchIcon from "@mui/icons-material/Search";
 import { slugify, formatDateTimeLocal } from "./utils";
 import { useFormStatus } from "react-dom";
+import { ZodError } from "zod";
 
 /**
  * Simple card wrapper with a header area for title, optional subtitle, and right-aligned actions.
@@ -68,28 +68,43 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
     defaultSlug?: string;
 }) {
     const form = useFormContext();
-    const title = form.watch("title");
-    const slug = form.watch("slug");
+    const {
+        formState: { errors },
+        setValue,
+        watch,
+    } = form;
+    const title = watch("title");
+    const slug = watch("slug");
     const initialAuto = !defaultSlug || slugify(defaultTitle) === defaultSlug;
     const [auto, setAuto] = React.useState(initialAuto);
 
     React.useEffect(() => {
-        if (auto && title) {
-            form.setValue("slug", slugify(title), { shouldValidate: false });
+        if (!auto) return;
+        const next = slugify(title || "");
+        if (next && next !== slug) {
+            setValue("slug", next, { shouldDirty: true });
         }
-    }, [title, auto]);
+    }, [title, slug, auto, setValue]);
 
     const copySlug = React.useCallback(() => navigator.clipboard.writeText(slug), [slug]);
 
     return (
         <>
-            <TextField {...form.register("title")} label="Title" required fullWidth />
+            <TextField
+                {...form.register("title")}
+                label="Title"
+                fullWidth
+                error={!!errors.title}
+                helperText={errors.title?.message as string | undefined}
+                inputProps={{ "aria-invalid": !!errors.title }}
+            />
             <TextField
                 {...form.register("slug")}
                 label="Slug"
-                required
                 fullWidth
-                helperText={auto ? "Auto-generated from title" : "Custom slug"}
+                error={!!errors.slug}
+                helperText={(errors.slug?.message as string | undefined) ?? (auto ? "Auto-generated from title" : "Custom slug")}
+                inputProps={{ "aria-invalid": !!errors.slug }}
                 InputLabelProps={{
                     shrink: !!slug || auto
                 }}
@@ -119,12 +134,35 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
 });
 
 // -----------------------------
+// Custom resolver that catches ZodError and converts to field errors
+// -----------------------------
+
+function safeZodResolver<T>(schema: { parseAsync: (values: T) => Promise<T> }) {
+    return async (values: T) => {
+        try {
+            const result = await schema.parseAsync(values);
+            return { values: result, errors: {} };
+        } catch (error) {
+            if (error instanceof ZodError) {
+                const fieldErrors: Record<string, { message: string }> = {};
+                error.issues.forEach((issue) => {
+                    const path = issue.path.join('.');
+                    fieldErrors[path] = { message: issue.message };
+                });
+                return { values: {}, errors: fieldErrors };
+            }
+            throw error;
+        }
+    };
+}
+
+// -----------------------------
 // RHF helpers for Admin forms
 // -----------------------------
 
 export function useProjectForm(defaultValues?: Partial<ProjectInput>) {
     const form = useForm<ProjectInput>({
-        resolver: zodResolver(projectInputSchema),
+        resolver: safeZodResolver(projectInputSchema),
         defaultValues: {
             title: "",
             slug: "",
@@ -140,7 +178,7 @@ export function useProjectForm(defaultValues?: Partial<ProjectInput>) {
 
 export function useBlogPostForm(defaultValues?: Partial<BlogPostInput>) {
     const form = useForm<BlogPostInput>({
-        resolver: zodResolver(blogPostInputSchema),
+        resolver: safeZodResolver(blogPostInputSchema),
         defaultValues: {
             title: "",
             slug: "",
