@@ -10,6 +10,8 @@ alwaysApply: true
 
 - **Database (Prisma + Postgres)**
   - Prisma client singleton: [src/lib/db.ts](mdc:src/lib/db.ts)
+  - Auth config: [src/lib/auth.ts](mdc:src/lib/auth.ts)
+  - NextAuth route: [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts)
   - Prisma schema: [prisma/schema.prisma](mdc:prisma/schema.prisma)
   - Seed script: [scripts/seed.ts](mdc:scripts/seed.ts)
   - Local DB via Docker: [docker-compose.yml](mdc:docker-compose.yml)

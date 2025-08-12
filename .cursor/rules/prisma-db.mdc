@@ -1,5 +1,5 @@
 ---
-globs: prisma/**,src/lib/db.ts,scripts/**
+globs: prisma/**,src/lib/db.ts,src/lib/auth.ts,scripts/**
 description: Prisma, Postgres, migrations, and seeding
 ---
 ## Client usage
@@ -14,7 +14,7 @@ const projects = await prisma.project.findMany();
 ## Schema and migrations
 
 - Edit the schema in [prisma/schema.prisma](mdc:prisma/schema.prisma).
-- After changes, locally run:
+- After changes (including NextAuth tables), locally run:
 
 ```bash
 npx prisma generate
@@ -36,6 +36,11 @@ npm run seed
 ```
 
 - Do not seed in production.
+
+## Authentication
+
+- NextAuth config lives in [src/lib/auth.ts](mdc:src/lib/auth.ts) with Prisma Adapter and Credentials provider (placeholder).
+- API route at [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts).
 
 ## Environment and local DB
 

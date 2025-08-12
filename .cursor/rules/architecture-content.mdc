@@ -18,13 +18,15 @@ app/
 components/
   ui/         // MUI-based components
   sections/   // Tailwind + layout components
-lib/
+src/lib/
   db.ts       // Prisma client
   auth.ts     // Auth.js config
 styles/
   globals.css // Tailwind layers
 prisma/
   schema.prisma
+app/api/
+  auth/[...nextauth]/route.ts // NextAuth API route
 ```
 
 ## Data models (current)
