@@ -1,79 +1,77 @@
 generator client {
-  provider = "prisma-client-js"
+    provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
 }
 
 model Project {
-  id          Int      @id @default(autoincrement())
-  title       String
-  slug        String   @unique
-  summary     String
-  content     String
-  techStack   String[]
-  repoUrl     String?
-  demoUrl     String?
-  coverImage  String?
-  featured    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+    id         Int      @id @default(autoincrement())
+    title      String
+    slug       String   @unique
+    summary    String
+    content    String
+    techStack  String[]
+    repoUrl    String?
+    demoUrl    String?
+    coverImage String?
+    featured   Boolean  @default(false)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
 }
 
 model BlogPost {
-  id          Int      @id @default(autoincrement())
-  title       String
-  slug        String   @unique
-  excerpt     String
-  content     String
-  coverImage  String?
-  publishedAt DateTime
+    id          Int      @id @default(autoincrement())
+    title       String
+    slug        String   @unique
+    excerpt     String
+    content     String
+    coverImage  String?
+    publishedAt DateTime
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  role      String    @default("admin")
-  accounts  Account[]
-  sessions  Session[]
+    id       Int       @id @default(autoincrement())
+    name     String
+    email    String    @unique
+    password String
+    role     String    @default("admin")
+    accounts Account[]
+    sessions Session[]
 }
 
-
 model Account {
-  id                Int     @id @default(autoincrement())
-  userId            Int
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    id                Int     @id @default(autoincrement())
+    userId            Int
+    type              String
+    provider          String
+    providerAccountId String
+    refresh_token     String? @db.Text
+    access_token      String? @db.Text
+    expires_at        Int?
+    token_type        String?
+    scope             String?
+    id_token          String? @db.Text
+    session_state     String?
+    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerAccountId])
+    @@unique([provider, providerAccountId])
 }
 
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       Int
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    id           String   @id @default(cuid())
+    sessionToken String   @unique
+    userId       Int
+    expires      DateTime
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
+    identifier String
+    token      String   @unique
+    expires    DateTime
 
-  @@unique([identifier, token])
+    @@unique([identifier, token])
 }
-
