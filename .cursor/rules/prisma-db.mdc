@@ -1,13 +1,13 @@
 ---
-globs: prisma/**,lib/db.ts,scripts/**
+globs: prisma/**,src/lib/db.ts,scripts/**
 description: Prisma, Postgres, migrations, and seeding
 ---
 ## Client usage
 
-- Import the singleton from [lib/db.ts](mdc:lib/db.ts). It sets a global in development to avoid multiple instances.
+- Import the singleton from [src/lib/db.ts](mdc:src/lib/db.ts). It sets a global in development to avoid multiple instances.
 
 ```ts
-import { prisma } from "../../lib/db"; // from a file under src/*
+import { prisma } from "@/lib/db";
 const projects = await prisma.project.findMany();
 ```
 
