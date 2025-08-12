@@ -1,7 +1,11 @@
 import "dotenv/config";
 import { prisma } from "../src/lib/db";
+import { hash } from "bcryptjs";
 
 async function main() {
+    const adminEmail = "guillaume.juste0408@gmail.com";
+    const adminPasswordHash = await hash("D@mien0408", 10);
+
     await prisma.project.createMany({
         data: [
             {
@@ -45,6 +49,21 @@ async function main() {
             },
         ],
         skipDuplicates: true,
+    });
+
+    await prisma.user.upsert({
+        where: { email: adminEmail },
+        update: {
+            name: "Guillaume Juste",
+            password: adminPasswordHash,
+            role: "admin",
+        },
+        create: {
+            name: "Guillaume Juste",
+            email: adminEmail,
+            password: adminPasswordHash,
+            role: "admin",
+        },
     });
 }
 
