@@ -12,6 +12,9 @@ import {
     IconButton,
     Tooltip,
 } from "@mui/material";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { projectInputSchema, type ProjectInput, blogPostInputSchema, type BlogPostInput } from "@/lib/validation";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import SearchIcon from "@mui/icons-material/Search";
 import { slugify, formatDateTimeLocal } from "./utils";
@@ -99,6 +102,41 @@ export const TitleSlugFields = React.memo(function TitleSlugFieldsImpl({ default
         </>
     );
 });
+
+// -----------------------------
+// RHF helpers for Admin forms
+// -----------------------------
+
+export function useProjectForm(defaultValues?: Partial<ProjectInput>) {
+    const form = useForm<ProjectInput>({
+        resolver: zodResolver(projectInputSchema),
+        defaultValues: {
+            title: "",
+            slug: "",
+            content: "",
+            summary: "",
+            techStack: [],
+            featured: false,
+            ...defaultValues,
+        },
+    });
+    return form;
+}
+
+export function useBlogPostForm(defaultValues?: Partial<BlogPostInput>) {
+    const form = useForm<BlogPostInput>({
+        resolver: zodResolver(blogPostInputSchema),
+        defaultValues: {
+            title: "",
+            slug: "",
+            excerpt: "",
+            content: "",
+            publishedAt: new Date(),
+            ...defaultValues,
+        },
+    });
+    return form;
+}
 
 /**
  * Lightweight search bar with optional right-aligned extra control(s).

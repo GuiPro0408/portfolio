@@ -14,9 +14,10 @@ import { Box, Paper, List, ListItemButton, ListItemText, ListSubheader, Stack, T
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { twoColGridSx, fullSpanSx } from "./styles";
 import { useDebouncedValue, formatDateTimeLocal } from "./utils";
-import { SectionCard, FormSubmitButton, TitleSlugFields, SearchBar, DateTimeNowField } from "./components";
+import { SectionCard, FormSubmitButton, TitleSlugFields, SearchBar, DateTimeNowField, useProjectForm, useBlogPostForm } from "./components";
 import { TechStackField, CoverImageField } from "./fields";
 import { DeleteWithConfirm } from "./delete";
+import { FormProvider } from "react-hook-form";
 
 // -----------------------------
 // Main Component
@@ -71,6 +72,169 @@ export default function AdminPanel({ projects, posts }: Props) {
     return postsIdx.filter((p) => (!onlyPublished || p.publishedAt) && (!q || p._hay.includes(q)));
   }, [postsIdx, dqPosts, onlyPublished]);
 
+  // -----------------------------
+  // Subcomponents (hooks must be at top level)
+  // -----------------------------
+
+  function ProjectCreateForm() {
+    const form = useProjectForm();
+    return (
+      <FormProvider {...form}>
+        <Box component="form" action={async (fd: FormData) => {
+          const values = form.getValues();
+          fd.set("title", values.title);
+          fd.set("slug", values.slug);
+          fd.set("summary", values.summary ?? "");
+          fd.set("content", values.content);
+          fd.set("techStack", (values.techStack ?? []).join(", "));
+          if (values.repoUrl) fd.set("repoUrl", values.repoUrl);
+          if (values.demoUrl) fd.set("demoUrl", values.demoUrl);
+          if (values.coverImage) fd.set("coverImage", values.coverImage);
+          if (values.featured) fd.set("featured", "true");
+          return createProject(fd);
+        }} sx={twoColGridSx}>
+          <TitleSlugFields />
+          <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
+            error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
+          <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
+            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+          <TechStackField name="techStack" />
+          <TextField {...form.register("repoUrl")} label="Repository URL" placeholder="https://…" fullWidth
+            error={!!form.formState.errors.repoUrl} helperText={form.formState.errors.repoUrl?.message} />
+          <TextField {...form.register("demoUrl")} label="Demo URL" placeholder="https://…" fullWidth
+            error={!!form.formState.errors.demoUrl} helperText={form.formState.errors.demoUrl?.message} />
+          <CoverImageField name="coverImage" />
+          <FormControlLabel control={<Switch checked={form.watch("featured") ?? false} onChange={(e) => form.setValue("featured", e.target.checked)} />} label="Featured" />
+          <Box sx={fullSpanSx}>
+            <FormSubmitButton label="Create" />
+          </Box>
+        </Box>
+      </FormProvider>
+    );
+  }
+
+  function ProjectEditForm({ p }: { p: Project }) {
+    const form = useProjectForm({
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      summary: p.summary ?? "",
+      content: p.content ?? "",
+      techStack: p.techStack ?? [],
+      repoUrl: p.repoUrl ?? "",
+      demoUrl: p.demoUrl ?? "",
+      coverImage: p.coverImage ?? "",
+      featured: p.featured,
+    });
+    return (
+      <FormProvider {...form}>
+        <Box component="form" action={async (fd: FormData) => {
+          const values = form.getValues();
+          fd.set("id", String(p.id));
+          fd.set("title", values.title);
+          fd.set("slug", values.slug);
+          fd.set("summary", values.summary ?? "");
+          fd.set("content", values.content);
+          fd.set("techStack", (values.techStack ?? []).join(", "));
+          fd.set("repoUrl", values.repoUrl ?? "");
+          fd.set("demoUrl", values.demoUrl ?? "");
+          fd.set("coverImage", values.coverImage ?? "");
+          if (values.featured) fd.set("featured", "true");
+          return updateProject(fd);
+        }} sx={twoColGridSx}>
+          <TitleSlugFields defaultTitle={p.title} defaultSlug={p.slug} />
+          <TextField {...form.register("summary")} label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx}
+            error={!!form.formState.errors.summary} helperText={form.formState.errors.summary?.message} />
+          <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
+            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+          <TechStackField name="techStack" defaultValue={p.techStack ?? []} />
+          <TextField {...form.register("repoUrl")} label="Repository URL" fullWidth
+            error={!!form.formState.errors.repoUrl} helperText={form.formState.errors.repoUrl?.message} />
+          <TextField {...form.register("demoUrl")} label="Demo URL" fullWidth
+            error={!!form.formState.errors.demoUrl} helperText={form.formState.errors.demoUrl?.message} />
+          <CoverImageField name="coverImage" defaultValue={p.coverImage ?? ""} />
+          <FormControlLabel control={<Switch checked={form.watch("featured") ?? false} onChange={(e) => form.setValue("featured", e.target.checked)} />} label="Featured" />
+          <Box sx={fullSpanSx}>
+            <FormSubmitButton label="Save" />
+          </Box>
+        </Box>
+      </FormProvider>
+    );
+  }
+
+  function PostCreateForm() {
+    const form = useBlogPostForm();
+    return (
+      <FormProvider {...form}>
+        <Box component="form" action={async (fd: FormData) => {
+          const values = form.getValues();
+          fd.set("title", values.title);
+          fd.set("slug", values.slug);
+          fd.set("excerpt", values.excerpt);
+          fd.set("content", values.content);
+          if (values.coverImage) fd.set("coverImage", values.coverImage);
+          const raw = (fd.get("publishedAt") as string) || new Date().toISOString();
+          fd.set("publishedAt", raw);
+          return createBlogPost(fd);
+        }} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+          <TitleSlugFields />
+          <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
+            required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
+          <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }}
+            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+          <CoverImageField name="coverImage" />
+          <DateTimeNowField name="publishedAt" label="Published At" defaultNow />
+          <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
+            <FormSubmitButton label="Create" />
+          </Box>
+        </Box>
+      </FormProvider>
+    );
+  }
+
+  function PostEditForm({ post }: { post: BlogPost }) {
+    const form = useBlogPostForm({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt ?? "",
+      content: post.content ?? "",
+      coverImage: post.coverImage ?? "",
+      publishedAt: post.publishedAt ?? new Date(),
+    });
+    return (
+      <FormProvider {...form}>
+        <Box component="form" action={async (fd: FormData) => {
+          const values = form.getValues();
+          fd.set("id", String(post.id));
+          fd.set("title", values.title);
+          fd.set("slug", values.slug);
+          fd.set("excerpt", values.excerpt);
+          fd.set("content", values.content);
+          fd.set("coverImage", values.coverImage ?? "");
+          const raw = (fd.get("publishedAt") as string) || new Date().toISOString();
+          fd.set("publishedAt", raw);
+          return updateBlogPost(fd);
+        }} sx={twoColGridSx}>
+          <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
+          <TextField {...form.register("excerpt")} label="Excerpt" multiline minRows={2} fullWidth sx={fullSpanSx}
+            required error={!!form.formState.errors.excerpt} helperText={form.formState.errors.excerpt?.message} />
+          <TextField {...form.register("content")} label="Content" multiline minRows={6} fullWidth sx={fullSpanSx}
+            required error={!!form.formState.errors.content} helperText={form.formState.errors.content?.message} />
+          <CoverImageField name="coverImage" defaultValue={post.coverImage ?? ""} />
+          <DateTimeNowField
+            name="publishedAt"
+            label="Published At"
+            defaultValue={post.publishedAt ? formatDateTimeLocal(post.publishedAt) : ""}
+          />
+          <Box sx={fullSpanSx}>
+            <FormSubmitButton label="Save" />
+          </Box>
+        </Box>
+      </FormProvider>
+    );
+  }
+
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { md: "260px 1fr" }, gap: 3 }}>
       {/* Sidebar (desktop) / Top tabs (mobile) */}
@@ -98,27 +262,9 @@ export default function AdminPanel({ projects, posts }: Props) {
       <Stack spacing={4} component="section">
         {tab === "projects" ? (
           <Stack spacing={4}>
-            {/* Create Project */}
+            {/* Create Project (RHF + Zod) */}
             <SectionCard title="Create Project" subtitle="Add a new portfolio entry">
-              <Box
-                component="form"
-                action={createProject}
-                sx={twoColGridSx}
-              >
-                <TitleSlugFields />
-                <TextField name="summary" label="Summary" multiline minRows={2} fullWidth sx={fullSpanSx} />
-                <TextField name="content" label="Content" multiline minRows={6} fullWidth sx={fullSpanSx} />
-                <TechStackField name="techStack" />
-
-                <TextField name="repoUrl" label="Repository URL" placeholder="https://…" fullWidth />
-                <TextField name="demoUrl" label="Demo URL" placeholder="https://…" fullWidth />
-                <CoverImageField name="coverImage" />
-
-                <FormControlLabel control={<Switch name="featured" />} label="Featured" />
-                <Box sx={fullSpanSx}>
-                  <FormSubmitButton label="Create" />
-                </Box>
-              </Box>
+              <ProjectCreateForm />
             </SectionCard>
 
             {/* Projects list */}
@@ -145,24 +291,7 @@ export default function AdminPanel({ projects, posts }: Props) {
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack spacing={2}>
-                            <Box
-                              component="form"
-                              action={updateProject}
-                              sx={twoColGridSx}
-                            >
-                              <input type="hidden" name="id" value={String(p.id)} />
-                              <TitleSlugFields defaultTitle={p.title} defaultSlug={p.slug} />
-                              <TextField name="summary" label="Summary" defaultValue={p.summary ?? ""} multiline minRows={2} fullWidth sx={fullSpanSx} />
-                              <TextField name="content" label="Content" defaultValue={p.content ?? ""} multiline minRows={6} fullWidth sx={fullSpanSx} />
-                              <TechStackField name="techStack" defaultValue={p.techStack ?? []} />
-                              <TextField name="repoUrl" label="Repository URL" defaultValue={p.repoUrl ?? ""} fullWidth />
-                              <TextField name="demoUrl" label="Demo URL" defaultValue={p.demoUrl ?? ""} fullWidth />
-                              <CoverImageField name="coverImage" defaultValue={p.coverImage ?? ""} />
-                              <FormControlLabel control={<Switch name="featured" defaultChecked={p.featured} />} label="Featured" />
-                              <Box sx={fullSpanSx}>
-                                <FormSubmitButton label="Save" />
-                              </Box>
-                            </Box>
+                            <ProjectEditForm p={p} />
 
                             <Divider />
 
@@ -182,22 +311,9 @@ export default function AdminPanel({ projects, posts }: Props) {
           </Stack>
         ) : (
           <Stack spacing={4}>
-            {/* Create Post */}
+            {/* Create Post (RHF + Zod) */}
             <SectionCard title="Create Blog Post" subtitle="Publish a new article">
-              <Box
-                component="form"
-                action={createBlogPost}
-                sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}
-              >
-                <TitleSlugFields />
-                <TextField name="excerpt" label="Excerpt" required multiline minRows={2} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
-                <TextField name="content" label="Content" required multiline minRows={6} fullWidth sx={{ gridColumn: { md: "1 / span 2" } }} />
-                <CoverImageField name="coverImage" />
-                <DateTimeNowField name="publishedAt" label="Published At" defaultNow />
-                <Box sx={{ gridColumn: { md: "1 / span 2" } }}>
-                  <FormSubmitButton label="Create" />
-                </Box>
-              </Box>
+              <PostCreateForm />
             </SectionCard>
 
             {/* Posts list */}
@@ -228,25 +344,7 @@ export default function AdminPanel({ projects, posts }: Props) {
                         </AccordionSummary>
                         <AccordionDetails>
                           <Stack spacing={2}>
-                            <Box
-                              component="form"
-                              action={updateBlogPost}
-                              sx={twoColGridSx}
-                            >
-                              <input type="hidden" name="id" value={String(post.id)} />
-                              <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
-                              <TextField name="excerpt" label="Excerpt" defaultValue={post.excerpt ?? ""} multiline minRows={2} fullWidth sx={fullSpanSx} />
-                              <TextField name="content" label="Content" defaultValue={post.content ?? ""} multiline minRows={6} fullWidth sx={fullSpanSx} />
-                              <CoverImageField name="coverImage" defaultValue={post.coverImage ?? ""} />
-                              <DateTimeNowField
-                                name="publishedAt"
-                                label="Published At"
-                                defaultValue={post.publishedAt ? formatDateTimeLocal(post.publishedAt) : ""}
-                              />
-                              <Box sx={fullSpanSx}>
-                                <FormSubmitButton label="Save" />
-                              </Box>
-                            </Box>
+                            <PostEditForm post={post} />
 
                             <Divider />
 

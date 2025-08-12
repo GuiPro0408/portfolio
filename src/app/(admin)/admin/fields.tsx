@@ -2,52 +2,55 @@
 
 import * as React from "react";
 import { Box, Stack, TextField, Autocomplete } from "@mui/material";
+import { Controller, useFormContext } from "react-hook-form";
 
 /**
  * Multi-tag free-solo tech stack field.
  * Stores a hidden CSV input to preserve the server action contract.
  */
-export const TechStackField = React.memo(function TechStackFieldImpl({ name, defaultValue }: { name: string; defaultValue?: string[] | string | null }) {
+export const TechStackField = React.memo(function TechStackFieldImpl({ name, defaultValue }: { name: "techStack"; defaultValue?: string[] | string | null }) {
+    const { control } = useFormContext();
     const initial = Array.isArray(defaultValue)
         ? defaultValue
         : typeof defaultValue === "string" && defaultValue.trim() !== ""
             ? defaultValue.split(",").map((s) => s.trim()).filter(Boolean)
             : [];
-    const [tags, setTags] = React.useState<string[]>(initial);
-    const onChange = React.useCallback((
-        _event: React.SyntheticEvent,
-        newValue: string[]
-    ) => setTags(newValue), []);
-
     return (
-        <>
-            <Autocomplete multiple freeSolo options={[]} value={tags} onChange={onChange}
-                renderInput={(params) => (
-                    <TextField {...params} label="Tech Stack" placeholder="Add tech and press Enter" />
-                )}
-            />
-            {/* Hidden input to keep server action API unchanged */}
-            <input type="hidden" name={name} value={tags.join(", ")} />
-        </>
+        <Controller
+            name={name}
+            control={control}
+            defaultValue={initial}
+            render={({ field }: { field: { value: string[]; onChange: (v: string[]) => void } }) => (
+                <Autocomplete
+                    multiple
+                    freeSolo
+                    options={[]}
+                    value={Array.isArray(field.value) ? field.value : []}
+                    onChange={(_e, v) => field.onChange(v as string[])}
+                    renderInput={(params) => (
+                        <TextField {...params} label="Tech Stack" placeholder="Add tech and press Enter" />
+                    )}
+                />
+            )}
+        />
     );
 });
 
 /**
  * URL text input with live preview when a valid image URL is detected.
  */
-export const CoverImageField = React.memo(function CoverImageFieldImpl({ name, defaultValue = "" }: { name: string; defaultValue?: string | null }) {
-    const [val, setVal] = React.useState(defaultValue ?? "");
+export const CoverImageField = React.memo(function CoverImageFieldImpl({ name, defaultValue = "" }: { name: "coverImage"; defaultValue?: string | null }) {
+    const { register, watch } = useFormContext();
+    const val = watch(name, defaultValue ?? "");
     const isImg = React.useMemo(
-        () => /^https?:\/\//.test(val) && /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(val),
+        () => typeof val === "string" && /^https?:\/\//.test(val) && /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(val),
         [val]
     );
     return (
         <Stack gap={1}>
             <TextField
-                name={name}
+                {...register(name)}
                 label="Cover Image URL"
-                value={val}
-                onChange={(e) => setVal(e.target.value)}
                 fullWidth
                 placeholder="https://…/cover.jpg"
             />
