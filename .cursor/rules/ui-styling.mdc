@@ -1,5 +1,5 @@
 ---
-globs: src/**/*.tsx,src/app/globals.css
+alwaysApply: false
 description: Styling with Tailwind and MUI
 ---
 ## Guidelines

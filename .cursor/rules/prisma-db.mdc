@@ -1,5 +1,5 @@
 ---
-globs: prisma/**,src/lib/db.ts,src/lib/auth.ts,scripts/**
+alwaysApply: false
 description: Prisma, Postgres, migrations, and seeding
 ---
 ## Client usage

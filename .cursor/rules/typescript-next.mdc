@@ -1,12 +1,12 @@
 ---
-globs: *.ts,*.tsx
+alwaysApply: false
 description: TypeScript + Next.js App Router conventions
 ---
 ## TypeScript
 
 - **Strictness**: `strict` is enabled. Avoid `any`; prefer precise types.
 - **Exports**: Explicitly type exported functions, component props, and public APIs.
-- **Path alias**: `@/*` maps to `src/*` per [tsconfig.json](mdc:tsconfig.json). With `src/lib/db.ts`, import using the alias:
+- **Path alias**: `@/*` maps to `src/*` per [tsconfig.json](mdc:tsconfig.json). With [src/lib/db.ts](mdc:src/lib/db.ts), import using the alias:
 
 ```ts
 import { prisma } from "@/lib/db";

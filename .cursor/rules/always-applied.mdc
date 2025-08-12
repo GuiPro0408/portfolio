@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+description: Project Structure Guide and core conventions for this portfolio codebase
+---
+## Project Structure Guide
+
+- **App Router**: Entry is under `src/app`
+  - Root layout: [src/app/layout.tsx](mdc:src/app/layout.tsx)
+  - Home page: [src/app/page.tsx](mdc:src/app/page.tsx)
+  - Global styles: [src/app/globals.css](mdc:src/app/globals.css)
+
+- **Database (Prisma + Postgres)**
+  - Prisma client singleton: [src/lib/db.ts](mdc:src/lib/db.ts)
+  - Auth config: [src/lib/auth.ts](mdc:src/lib/auth.ts)
+  - NextAuth route: [src/app/api/auth/[...nextauth]/route.ts](mdc:src/app/api/auth/[...nextauth]/route.ts)
+  - Prisma schema: [prisma/schema.prisma](mdc:prisma/schema.prisma)
+  - Seed script: [scripts/seed.ts](mdc:scripts/seed.ts)
+  - Local DB via Docker: [docker-compose.yml](mdc:docker-compose.yml)
+
+- **Configuration**
+  - Next.js config: [next.config.ts](mdc:next.config.ts)
+  - TypeScript config (alias `@/*` → `src/*`): [tsconfig.json](mdc:tsconfig.json)
+  - ESLint (Next core web vitals): [eslint.config.mjs](mdc:eslint.config.mjs)
+  - Vercel build settings: [vercel.json](mdc:vercel.json)
+  - Project scripts: [package.json](mdc:package.json)
+  - Docs: [README.md](mdc:README.md)
+
+- **Common scripts**
+  - Dev server: `npm run dev`
+  - Build/start: `npm run build` / `npm start`
+  - Prisma: `npm run migrate:deploy`, `npm run seed`
+  - Docker DB: `npm run db:up`, `npm run db:down`, `npm run db:logs`
+
+## Notes
+- The codebase uses ESM and strict TypeScript. Prefer imports via the `@/*` path alias where possible.
+- Server Components are default in App Router; add `"use client"` only when required by client-only APIs.
